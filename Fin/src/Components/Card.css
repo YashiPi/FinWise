@@ -1,0 +1,60 @@
+.image {
+  position: relative;
+  background-image: url(Images/pexels-pixabay-210705.jpg);
+  background-size: cover;
+  background-position: center;
+}
+
+.image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(5px); /* Apply blur effect to the background */
+  z-index: 0;
+  background: inherit; /* Inherit the background image */
+}
+
+.content {
+  position: relative; /* Ensure content is placed on top */
+  z-index: 1; /* Ensure content is above the blurred background */
+  padding: 16px; /* Increase padding */
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 90%; /* Adjust width to make the box more rectangular */
+  max-width: 600px; /* Set a maximum width for the box */
+  height: 300px; /* Increase the height of the box */
+  margin: 0 auto; /* Center the box */
+}
+
+/* First Box with Gradient */
+.content:first-child {
+  background: linear-gradient(to bottom right, #384c64, #d1d8a5); /* Gradient from #384c64 to #d1d8a5 */
+  opacity: 0.7; /* Optionally make it slightly transparent */
+}
+
+/* Second Box with Gradient */
+.content:last-child {
+  background: linear-gradient(to bottom right, #d1d8a5, #384c64); /* Gradient from #d1d8a5 to #384c64 */
+  opacity: 0.7; /* Optionally make it slightly transparent */
+}
+
+/* Text Styling (Ensure the text is 100% opaque) */
+h2 {
+  font-size: 2rem; /* Increase the font size of the heading */
+  font-weight: bold;
+  color: #333; /* Solid color for the heading text */
+}
+
+p {
+  font-size: 1.125rem; /* Increase the font size of the paragraph */
+  color: #333; /* Solid color for the paragraph text */
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
