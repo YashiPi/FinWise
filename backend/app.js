@@ -6,6 +6,8 @@ const app = express();
 app.use(express.json());
 
 connectDB();
+// banking chatbot route
+// app.use("/api", userRoutes);
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/user", require("./routes/userRoutes"));
