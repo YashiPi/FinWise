@@ -1,9 +1,7 @@
 import os
-# from langchain.llms import Groq
 from langchain_groq import ChatGroq
 from langchain.schema import SystemMessage, HumanMessage
-from langchain.prompts import PromptTemplate
-# from langchain.chains import LLMChain
+
 from langchain.schema.runnable import RunnableLambda
 from langchain_core.runnables import RunnableSequence
 from dotenv import load_dotenv
@@ -21,36 +19,12 @@ groq_api_key = os.environ['GROQ_API_KEY']
 
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-# llm = ChatGroq(model_name="mistral", groq_api_key=groq_api_key)
 llm = ChatGroq(groq_api_key=groq_api_key, model_name = "gemma2-9b-it", temperature=0)
-# llm = ChatGroq(groq_api_key=groq_api_key, model_name = "deepseek-r1-distill-qwen-32b")
-
-# BALANCE_INTENTS = ["what's my balance", "check my bank balance", "how much money is left"]
-# TRANSFER_INTENTS = ["send money", "transfer money", "pay someone", "make a transaction"]
 
 BASE_URL = "http://127.0.0.1:5000"
 CHECK_BALANCE_URL = f"{BASE_URL}/check_balance"
 TRANSFER_MONEY_URL = f"{BASE_URL}/transfer_money"
-
-# prompt = PromptTemplate(
-#     input_variables = ["query"],
-#     template="""
-#     You are a smart banking assistant. Identify the intent from the user's query.
-#     Possible intents: check_balance, transfer_money, general_query.
-
-#     User Query: {query}
-#     Intent:
-#     """
-# )
-
-# def detect_intent(user_query):
-#     query_lower = user_query.lower()
-#     if any(phrase in query_lower for phrase in BALANCE_INTENTS):
-#         return "check_balance"
-#     elif any(phrase in query_lower for phrase in TRANSFER_INTENTS):
-#         return "transfer_money"
-#     else:
-#         return "general_query"
+SET_GOALS_URL = f"{BASE_URL}/api/goals"
 
 def check_balance(user_id):
     response = requests.get(CHECK_BALANCE_URL, params={"userId": user_id})
@@ -65,8 +39,6 @@ def transfer_money(user_id):
         return "Transaction canceled."
     
     amount = int(input("Enter amount to transfer: "))
-    # if amount.lower() == "cancel":
-    #     return "Transaction canceled."
 
     data = {"fromUserId": user_id, "toUserId": to_account, "amount": amount}
     
@@ -80,12 +52,21 @@ def transfer_money(user_id):
             return f"Error: {response.status_code} - {response.text}"
     except requests.exceptions.RequestException as e:
         return f"Failed to connect to API: {str(e)}"
-    
-    # response = requests.post(TRANSFER_MONEY_URL, json=data)
 
-    # if response.status_code == 200:
-    #     return response.json().get("message", "Transfer successful!")
-    # return "Transaction failed."
+def set_goals(user_id):
+    expenditure_goal = int(input("Enter your monthly expenditure goal: "))
+    savings_goal = int(input("Enter your monthly savings goal: "))
+
+    data = {"userId":user_id,  "expenditureGoal": expenditure_goal, "savingsGoal":savings_goal}
+
+    try:
+        response = requests.post(SET_GOALS_URL, json=data)
+        if response.status_code == 200:
+            return "Goals set successfully!"
+        else:
+            return f"Error: {response.status_code} - {response.text}"
+    except requests.exceptions.RequestException as e:
+        return f"Failed to conenct to API: {str(e)}"
 
 # def handle_general_query(user_query):
 #     prompt = PromptTemplate.from_template("Answer this banking query: {query}")
@@ -93,18 +74,6 @@ def transfer_money(user_id):
 #     response = chain.invoke({"query": user_query})
 #     return response.content.strip()
 
-# def ai_agent(user_id):
-#     while True:
-#         user_query = input("Ask me something about your banking: ").strip().lower()
-        
-#         intent = detect_intent(user_query)
-
-#         if intent == "check_balance":
-#             print(check_balance(user_id))
-#         elif intent == "transfer_money":
-#             print(transfer_money(user_id))
-#         else:
-#             print(handle_general_query(user_query))
 
 user_id = "user123"
 check_balance_tool = Tool(
@@ -113,14 +82,6 @@ check_balance_tool = Tool(
     description="Retrieve the user's bank balance instantly. Always return the balance directly."
 )
 
-# def transfer_money_tool_wrapper(query: str):
-#     words = query.split()
-#     amount = next((word for word in words if word.isdigit()), None)
-#     recipient = words[-1] if amount else None
-
-#     if amount and recipient:
-#         return transfer_money(amount, recipient)
-#     return "Please specify the amount and recipient."
 
 transfer_money_tool = Tool(
     name = "Transfer Money",
@@ -128,8 +89,14 @@ transfer_money_tool = Tool(
     description="Transfers money from your account. You will be prompted to enter details. If the transaction is cancelled, do not pursue it further"
 )
 
+set_goals_tool = Tool(
+    name="Set Goals",
+    func=lambda _: set_goals(user_id),
+    description="Sets your monthly expenditure and savings goals. You will be prompted to enter the goals."
+)
+
 agent_executor = initialize_agent(
-    tools = [check_balance_tool, transfer_money_tool],
+    tools = [check_balance_tool, transfer_money_tool, set_goals_tool],
     llm = llm,
     # agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
 
@@ -143,14 +110,13 @@ agent_executor = initialize_agent(
 
 # query1 = f"Do I have enough money?"
 # query1 = f"How to open a new bank account?"
-query1 = f"Check my balance"
-query2 = "I want to pay to a friend."
-
-response1 = agent_executor.run(query1)
-response2 = agent_executor.run(query2)
-
-print(response1)  # Expected: "Your current balance is $1,500."
-print(response2)  # Expected: "Transferred ₹10 to user456 successfully."
+# query1 = f"Check my balance"
+# query2 = "I want to pay to a friend."
+query3 = "I want to set my monthly goals."
 
 
-# ctrl + alt + 4
+# response1 = agent_executor.run(query1)
+response3 = agent_executor.run(query3)
+
+# print(response1) 
+print(response3)  

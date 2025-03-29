@@ -7,8 +7,13 @@ CORS(app)  # Enable CORS for frontend interaction
 
 # Connect to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
-db = client["bankingApp"]
+# db = client["bankingApp"]
+db = client["test"]
 users_collection = db["users"]
+goals_collection = db["goals"]
+microinvestments_collection = db["microinvestments"]
+transactions_collection = db["transactions"]
+account_collection = db["account"]
 
 # API to check balance
 @app.route("/check_balance", methods=["GET"])
@@ -21,27 +26,40 @@ def check_balance():
 
     return jsonify({"balance": user["balance"]})
 
-# API to transfer money
-@app.route("/transfer_money", methods=["POST"])
-def transfer_money():
+
+# API to create/update goals
+@app.route("/api/goals", methods=["POST"])
+def set_goals():
     data = request.json
-    sender_id = data.get("fromUserId")
-    receiver_id = data.get("toUserId")
-    amount = data.get("amount")
+    user_id = data.get("userId")
+    expenditure_goal = data.get("expenditureGoal")
+    savings_goal = data.get("savingsGoal")
 
-    sender = users_collection.find_one({"userId": sender_id})
-    receiver = users_collection.find_one({"userId": receiver_id})
+    if not user_id or expenditure_goal is None or savings_goal is None:
+        return jsonify({"error": "Missing userId, expenditureGoal, or savingsGoal"}), 400
 
-    if not sender or not receiver:
-        return jsonify({"message": "User not found"}), 404
-    if sender["balance"] < amount:
-        return jsonify({"message": "Insufficient balance"}), 400
+    try:
+        goal = goals_collection.find_one({"userId": user_id})
 
-    # Update balances
-    users_collection.update_one({"userId": sender_id}, {"$inc": {"balance": -amount}})
-    users_collection.update_one({"userId": receiver_id}, {"$inc": {"balance": amount}})
+        if not goal:
+            goal = {
+                "userId": user_id,
+                "expenditureGoal": expenditure_goal,
+                "savingsGoal": savings_goal,
+            }
+            goals_collection.insert_one(goal)
+        else:
+            goals_collection.update_one(
+                {"userId": user_id},
+                {"$set": {"expenditureGoal": expenditure_goal, "savingsGoal": savings_goal}},
+            )
 
-    return jsonify({"message": "Transfer successful"})
+        return jsonify(goal)
+
+    except Exception as e:
+        print(f"Error in POST /api/goals: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+    
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)  # Runs on http://localhost:5000
